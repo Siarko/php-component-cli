@@ -1,0 +1,23 @@
+{
+  "name": "siarko/psw",
+  "description": "Project switch console",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Mateusz Korbal",
+      "email": "mkorbal@gorillagroup.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Siarko\\": "src/Siarko/"
+    }
+  },
+  "require": {
+    "ext-pcntl": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "asvvvad/clipboard": "dev-master",
+    "myclabs/php-enum": "^1.8"
+  }
+}
