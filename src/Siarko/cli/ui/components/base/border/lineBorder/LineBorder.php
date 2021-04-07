@@ -22,7 +22,7 @@ class LineBorder extends Border
     {
         parent::__construct();
 
-        if(is_null($variant)){ $variant = new LineBorderVariant(); }
+        if(is_null($variant)){ $variant = LineBorderVariant::LINE_NORMAL(); }
         $variant = $variant->getValue();
 
         $this->setLeftUp(self::VARIANTS[$variant][2]);

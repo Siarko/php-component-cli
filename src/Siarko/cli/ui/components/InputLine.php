@@ -38,7 +38,7 @@ class InputLine extends Component
     public function __construct()
     {
         parent::__construct();
-        $this->setTextColor(new TextColor(TextColor::WHITE));
+        $this->setTextColor(TextColor::WHITE());
         $this->clipboard = new \Clipboard();
         //$this->getSizing()->setMaxSize(-1, 1);
     }
@@ -75,7 +75,7 @@ class InputLine extends Component
         $background = (new StyledText(mb_substr($visibleText, 0, $visibleCursorPosition)))
             ->setBackgroundColor($this->getBackgroundColor())->setTextColor($this->textColor);
         $background .= (new StyledText(mb_substr($visibleText, $visibleCursorPosition, 1)))
-            ->addFontStyle(new FontStyles(FontStyles::INVERTED));
+            ->addFontStyle(FontStyles::INVERTED());
         $background .= (new StyledText(mb_substr($visibleText, $visibleCursorPosition+1)))
             ->setBackgroundColor($this->getBackgroundColor())->setTextColor($this->textColor);
         //write text to screen buffer

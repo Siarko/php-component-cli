@@ -33,10 +33,10 @@ class MainView extends View
         $mainContainer = new Container();
         $mainContainer->setLayout(new LayoutHorizontal(['20%', '*']));
         $mainContainer->setParent($this);
-        $mainContainer->setBackgroundColor(new BackgroundColor(BackgroundColor::LIGHT_GREEN));
+        $mainContainer->setBackgroundColor(BackgroundColor::LIGHT_GREEN());
         $mainContainer->setBorder(
             (new LineBorder())
-                ->setColor(new TextColor(TextColor::BLACK))
+                ->setColor(TextColor::BLACK())
                 ->setTitle("Main component")
         );
 
@@ -87,14 +87,14 @@ class MainView extends View
         ]);
 
         $menu->onFocusChange(function($newState) use ($menu){
-            $menu->setBackgroundColor(new BackgroundColor(($newState) ? BackgroundColor::LIGHT_PURPLE : BackgroundColor::PURPLE));
+            $menu->setBackgroundColor(($newState) ? BackgroundColor::LIGHT_PURPLE() : BackgroundColor::PURPLE());
             $menu->setValid(false);
         })->focus();
         $menu->getSizing()->setMaxSize(null, new Pixel(8));
         $menu->setShowBreadCrumbs(false);
 
         $menuC = new Container();
-        $menuC->setBackgroundColor(new BackgroundColor(BackgroundColor::GREEN));
+        $menuC->setBackgroundColor(BackgroundColor::GREEN());
         $menuC->add($menu);
 
         $menu2 = new ListMenu([
@@ -141,7 +141,7 @@ class MainView extends View
             'item8' => "Item 8",
         ]);
         $menu2->onFocusChange(function($newState) use ($menu2){
-            $menu2->setBackgroundColor(new BackgroundColor(($newState) ? BackgroundColor::LIGHT_PURPLE : BackgroundColor::PURPLE));
+            $menu2->setBackgroundColor(($newState) ? BackgroundColor::LIGHT_PURPLE() : BackgroundColor::PURPLE());
             $menu2->setValid(false);
         });
 

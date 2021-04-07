@@ -24,8 +24,8 @@ class LayoutFill extends AbstractLayout
 
     public function __construct()
     {
-        $this->verticalAlign = new VerticalAlign(VerticalAlign::MIDDLE);
-        $this->horizontalAlign = new HorizontalAlign(HorizontalAlign::MIDDLE);
+        $this->verticalAlign = VerticalAlign::MIDDLE();
+        $this->horizontalAlign = HorizontalAlign::MIDDLE();
     }
 
     public function getBB(BaseComponent $component): BoundingBox
@@ -110,15 +110,15 @@ class LayoutFill extends AbstractLayout
         //horizontal
         if($maxSize->getX() != ComponentSizing::UNLIMITED_SIZE && $maxSize->getX() < $maxBB->getWidth()){
             $x1 = $maxBB->getX1();
-            if($this->horizontalAlign->getValue() == HorizontalAlign::LEFT){
+            if($this->horizontalAlign->equals(HorizontalAlign::LEFT())){
                 $maxBB->setWidth($maxSize->getX());
             }
-            if($this->horizontalAlign->getValue() == HorizontalAlign::MIDDLE){
+            if($this->horizontalAlign->equals(HorizontalAlign::MIDDLE())){
                 $o = (int)($maxBB->getWidth()/2)-(int)($maxSize->getX()/2)+$maxBB->getX();
                 $maxBB->setX($o);
                 $maxBB->setWidth($maxSize->getX());
             }
-            if($this->horizontalAlign->getValue() == HorizontalAlign::RIGHT){
+            if($this->horizontalAlign->equals(HorizontalAlign::RIGHT())){
                 $maxBB->setX($x1-$maxSize->getX());
                 $maxBB->setWidth($maxSize->getX());
             }
@@ -127,15 +127,15 @@ class LayoutFill extends AbstractLayout
         //Vertical
         if($maxSize->getY() != ComponentSizing::UNLIMITED_SIZE && $maxSize->getY() < $maxBB->getHeight()){
             $y1 = $maxBB->getY1();
-            if($this->verticalAlign->getValue() == VerticalAlign::TOP){
+            if($this->verticalAlign->equals(VerticalAlign::TOP())){
                 $maxBB->setHeight($maxSize->getY());
             }
-            if($this->verticalAlign->getValue() == VerticalAlign::MIDDLE){
+            if($this->verticalAlign->equals(VerticalAlign::MIDDLE())){
                 $o = (int)($maxBB->getHeight()/2)-(int)($maxSize->getY()/2)+$maxBB->getY();
                 $maxBB->setY($o);
                 $maxBB->setHeight($maxSize->getY());
             }
-            if($this->verticalAlign->getValue() == VerticalAlign::BOTTOM){
+            if($this->verticalAlign->equals(VerticalAlign::BOTTOM())){
                 $maxBB->setY($y1-$maxSize->getY());
                 $maxBB->setHeight($maxSize->getY());
             }

@@ -4,11 +4,16 @@
 namespace Siarko\cli\ui\layouts\align;
 
 
-use Siarko\cli\paradigm\AbstractEnum;
+use MyCLabs\Enum\Enum;
 
-class HorizontalAlign extends AbstractEnum
+/**
+ * @method static self LEFT()
+ * @method static self MIDDLE()
+ * @method static self RIGHT()
+ * */
+class HorizontalAlign extends Enum
 {
-    const LEFT = 0;
-    const MIDDLE = 1;
-    const RIGHT = 2;
+    private const LEFT = 0;
+    private const MIDDLE = 1;
+    private const RIGHT = 2;
 }

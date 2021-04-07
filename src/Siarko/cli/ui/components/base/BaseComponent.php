@@ -97,7 +97,7 @@ abstract class BaseComponent implements Drawable
             $out = Output::get()->getOutputBuffer();
 
 
-            if ($this->getBackgroundColor()->getValue() != BackgroundColor::TRANSPARENT) {
+            if (!$this->getBackgroundColor()->equals(BackgroundColor::TRANSPARENT())) {
                 Profiler::start("background");
                 //get line filled with spaces
                 $bgRow = $this->getSizing()->getBorder()->getMiddleBorderRow($this, $bounds->getWidth());

@@ -322,7 +322,7 @@ class ListMenu extends Component
     }
 
     protected function select(Component $component){
-        $component->getParent()->setBackgroundColor(new BackgroundColor(BackgroundColor::LIGHT_GREEN));
+        $component->getParent()->setBackgroundColor(BackgroundColor::LIGHT_GREEN());
         $component->getParent()->setValid(false);
         $component->getParent()->setCustomFlag('selected', true);
     }
@@ -342,7 +342,7 @@ class ListMenu extends Component
         foreach ($submenu as $data) {
             $subContainer = new Container();
             $subContainer->setLayout(new LayoutHorizontal(['*','3px']));
-            $pointer = (new TextComponent("→"))->setTextAlign(new HorizontalAlign(HorizontalAlign::MIDDLE));
+            $pointer = (new TextComponent("→"))->setTextAlign(HorizontalAlign::MIDDLE());
             if(is_null($data[self::SUBMENU])){
                 $pointer->setActive(false);
             }

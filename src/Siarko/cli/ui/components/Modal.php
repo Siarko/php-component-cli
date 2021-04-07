@@ -17,7 +17,7 @@ class Modal extends Container
         $this->setLayer(1000);
         $this->setFloating(true);
         $this->setVisible(false);
-        $this->setBackgroundColor(new BackgroundColor(BackgroundColor::TRANSPARENT));
+        $this->setBackgroundColor(BackgroundColor::TRANSPARENT());
     }
 
     /**

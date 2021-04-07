@@ -12,12 +12,13 @@ class StyledText
 {
     private string $text = '';
     private array $styles = [];
-    private string $textColor = TextColor::WHITE;
+    private string $textColor;
     private BackgroundColor $backgroundColor;
 
     function __construct($text = '')
     {
-        $this->backgroundColor = new BackgroundColor(BackgroundColor::BLACK);
+        $this->textColor = TextColor::WHITE();
+        $this->backgroundColor = BackgroundColor::BLACK();
         $this->text = $text;
     }
 
@@ -66,7 +67,7 @@ class StyledText
     private function getStylesString(): string
     {
         $s = $this->styles;
-        if($this->backgroundColor->getValue() != BackgroundColor::TRANSPARENT){
+        if(!$this->backgroundColor->equals(BackgroundColor::TRANSPARENT())){
             $s[] = $this->backgroundColor;
         }
         $s[] = $this->textColor;
@@ -75,7 +76,9 @@ class StyledText
 
     public function build(): string
     {
-        return $this->getStylesString().$this->parseUnicode($this->text).$this->createStyle([FontStyles::STYLE_RESET]);
+        return $this->getStylesString().
+            $this->parseUnicode($this->text).
+            $this->createStyle([FontStyles::STYLE_RESET()->getValue()]);
     }
 
 

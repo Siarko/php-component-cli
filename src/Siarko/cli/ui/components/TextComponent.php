@@ -22,7 +22,7 @@ class TextComponent extends Component
     public function __construct(string $text = '')
     {
         parent::__construct();
-        $this->textAlign = new HorizontalAlign(HorizontalAlign::LEFT);
+        $this->textAlign = HorizontalAlign::LEFT();
         $this->text = new StyledText($text);
     }
 
@@ -47,10 +47,10 @@ class TextComponent extends Component
     {
         $offset = 0;
         $len = mb_strlen($this->text->getText());
-        if ($this->textAlign->getValue() == HorizontalAlign::MIDDLE) {
+        if ($this->textAlign->equals(HorizontalAlign::MIDDLE())) {
             $offset = (int)$maxWidth / 2 - (int)($len / 2);
         }
-        if ($this->textAlign->getValue() == HorizontalAlign::RIGHT) {
+        if ($this->textAlign->equals(HorizontalAlign::RIGHT())) {
             $offset = $maxWidth - $len;
         }
         return $offset;

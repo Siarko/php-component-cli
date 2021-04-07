@@ -4,30 +4,45 @@
 namespace Siarko\cli\io\output\styles;
 
 
-use Siarko\cli\paradigm\AbstractEnum;
+use MyCLabs\Enum\Enum;
 
-class BackgroundColor extends AbstractEnum
+/**
+ * @method static self BLACK()
+ * @method static self RED()
+ * @method static self GREEN()
+ * @method static self YELLOW()
+ * @method static self BLUE()
+ * @method static self PURPLE()
+ * @method static self CYAN()
+ * @method static self LIGHT_GRAY()
+ * @method static self DARK_GRAY()
+ * @method static self LIGHT_RED()
+ * @method static self LIGHT_GREEN()
+ * @method static self LIGHT_YELLOW()
+ * @method static self LIGHT_BLUE()
+ * @method static self LIGHT_PURPLE()
+ * @method static self LIGHT_CYAN()
+ * @method static self WHITE()
+ * @method static self TRANSPARENT()
+ *
+ * */
+class BackgroundColor extends Enum
 {
-    const BLACK = '40';
-    const RED = '41';
-    const GREEN = '42';
-    const YELLOW = '43';
-    const BLUE = '44';
-    const PURPLE = '45';
-    const CYAN = '46';
-    const LIGHT_GRAY = '47';
-    const DARK_GRAY = '100';
-    const LIGHT_RED = '101';
-    const LIGHT_GREEN = '102';
-    const LIGHT_YELLOW = '103';
-    const LIGHT_BLUE = '104';
-    const LIGHT_PURPLE = '105';
-    const LIGHT_CYAN = '106';
-    const WHITE = '107';
-    const TRANSPARENT = -1;
-
-    public function __construct($initial_value = self::BLACK, $strict = false)
-    {
-        parent::__construct($initial_value, $strict);
-    }
+    private const BLACK = '40';
+    private const RED = '41';
+    private const GREEN = '42';
+    private const YELLOW = '43';
+    private const BLUE = '44';
+    private const PURPLE = '45';
+    private const CYAN = '46';
+    private const LIGHT_GRAY = '47';
+    private const DARK_GRAY = '100';
+    private const LIGHT_RED = '101';
+    private const LIGHT_GREEN = '102';
+    private const LIGHT_YELLOW = '103';
+    private const LIGHT_BLUE = '104';
+    private const LIGHT_PURPLE = '105';
+    private const LIGHT_CYAN = '106';
+    private const WHITE = '107';
+    private const TRANSPARENT = -1;
 }

@@ -4,12 +4,16 @@
 namespace Siarko\cli\ui\layouts\align;
 
 
-use Siarko\cli\paradigm\AbstractEnum;
+use MyCLabs\Enum\Enum;
 
-class VerticalAlign extends AbstractEnum
+/**
+ * @method static self TOP()
+ * @method static self MIDDLE()
+ * @method static self BOTTOM()
+ * */
+class VerticalAlign extends Enum
 {
-    const TOP = 0;
-    const MIDDLE = 1;
-    const BOTTOM = 2;
-
+    private const TOP = 0;
+    private const MIDDLE = 1;
+    private const BOTTOM = 2;
 }

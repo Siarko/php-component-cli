@@ -75,7 +75,7 @@ class Border
 
     public function __construct()
     {
-        $this->color = new TextColor(TextColor::WHITE);
+        $this->color = TextColor::WHITE();
     }
 
     public function __call($name, $value)
