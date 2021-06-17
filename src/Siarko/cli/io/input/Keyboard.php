@@ -35,6 +35,14 @@ class Keyboard implements EventProvider
         }, Events::EXIT);
     }
 
+    public function pauseStream(){
+        $this->inputStream->releaseStream();
+    }
+
+    public function catchStream(){
+        $this->inputStream->catchStream();
+    }
+
     public function addOutsideEvent(KeyDownEvent $event){
         $this->outsideEvents[] = $event;
     }

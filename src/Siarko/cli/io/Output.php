@@ -3,6 +3,7 @@
 namespace Siarko\cli\io;
 
 
+use Siarko\cli\io\output\termCapabilities\ColorCapability;
 use Siarko\cli\paradigm\Singleton;
 use Siarko\cli\io\output\DefaultOutputBuffer;
 use Siarko\cli\io\output\IOutBuffer;
@@ -80,12 +81,10 @@ class Output
 
     private function initScreen($screenMode){
         if($screenMode == self::MODE_CLEAR){
-            system('clear');
+            $this->clearScreen();
         }else{
-            //switch to second console buffer
-            system('tput smcup');
-            //disable cursor
-            system('tput civis');
+            $this->setSecondaryBuffer();
+            $this->disableCursor();
         }
     }
 
@@ -100,10 +99,8 @@ class Output
 
     private function exitScreen(){
         if($this->screenMode == self::MODE_FLIP_BUFFER) {
-            //enable cursor
-            system('tput cnorm');
-            //switch to primary console buffer
-            system('tput rmcup');
+            $this->setPrimaryBuffer();
+            $this->enableCursor();
         }
     }
 
@@ -113,6 +110,36 @@ class Output
     public function getScreenMode(): int
     {
         return $this->screenMode;
+    }
+
+    public function setPrimaryBuffer(){
+        system('tput rmcup');
+    }
+    public function setSecondaryBuffer(){
+        system('tput smcup');
+    }
+    public function enableCursor(){
+        //show cursor
+        system('tput cnorm');
+        //echo input characters to console
+        system('stty echo');
+    }
+    public function disableCursor(){
+        system('tput civis');
+        //cbreak enabled for special term controll characters and -echo for hiding input characters
+        system('stty cbreak -echo');
+    }
+    public function clearScreen(){
+        system('clear');
+    }
+
+    /**
+     * Check if terminal can handle colors; if yes -> how many
+     * @return ColorCapability
+     */
+    public function getColorCapability(): ColorCapability
+    {
+        return new ColorCapability(system('tput colors'));
     }
 
 }

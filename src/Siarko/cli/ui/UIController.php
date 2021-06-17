@@ -8,6 +8,8 @@ use Siarko\cli\bootstrap\Bootstrap;
 use Siarko\cli\bootstrap\exceptions\ParamTypeException;
 use Siarko\cli\io\input\event\BootstrapKeyEvents;
 use Siarko\cli\io\input\event\KeyDownEvent;
+use Siarko\cli\io\input\Keyboard;
+use Siarko\cli\io\Output;
 use Siarko\cli\paradigm\Singleton;
 use Siarko\cli\ui\components\View;
 
@@ -98,4 +100,24 @@ class UIController
         return null;
     }
 
+    /**
+     * Useful for calling passthru with a command that takes input and throws stuff to stdout
+     * It switches to primary screen, recovers default cursor state and pauses keyboard "hook"
+     * @throws ParamTypeException
+     */
+    public function pauseApp(){
+        Output::get()->setPrimaryBuffer();
+        Output::get()->enableCursor();
+        Keyboard::get()->pauseStream();
+    }
+
+    /**
+     * Call this after PauseApp to restore app to working state
+     */
+    public function resumeApp(){
+        Output::get()->setSecondaryBuffer();
+        Output::get()->disableCursor();
+        Keyboard::get()->catchStream();
+        UIController::get()->update();
+    }
 }

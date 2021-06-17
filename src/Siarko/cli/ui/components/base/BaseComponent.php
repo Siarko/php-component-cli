@@ -4,15 +4,12 @@
 namespace Siarko\cli\ui\components\base;
 
 
-use Siarko\cli\bootstrap\exceptions\ParamTypeException;
-use Siarko\cli\io\input\event\KeyDownEvent;
 use Siarko\cli\io\Output;
 use Siarko\cli\io\output\styles\BackgroundColor;
 use Siarko\cli\ui\components\ComponentFilter;
 use Siarko\cli\ui\components\Modal;
 use Siarko\cli\ui\components\View;
 use Siarko\cli\ui\layouts\AbstractLayout;
-use Siarko\cli\ui\layouts\Layout;
 use Siarko\cli\ui\layouts\LayoutFill;
 use Siarko\cli\util\BoundingBox;
 use Siarko\cli\util\Cacheable;
@@ -283,6 +280,13 @@ abstract class BaseComponent implements Drawable
     }
 
     /**
+     * Called when element's parent is set;
+     * Revalidation == true when one of parent's parent is set
+     * @param bool $revalidation
+     */
+    protected function onParentSet(bool $revalidation){}
+
+    /**
      * @return BackgroundColor
      */
     public function getBackgroundColor(): ?BackgroundColor
@@ -366,6 +370,7 @@ abstract class BaseComponent implements Drawable
         foreach ($components as $component) {
             $this->children[] = $component;
             $component->setParent($this);
+            $component->onParentSet(false);
         }
         return $this;
     }
@@ -556,6 +561,7 @@ abstract class BaseComponent implements Drawable
         Profiler::start();
         foreach ($this->getChildren() as $child) {
             $child->setParent($this);
+            $child->onParentSet(true);
         }
         Profiler::end();
     }
@@ -593,11 +599,17 @@ abstract class BaseComponent implements Drawable
         return ++static::$UUID_INDEX;
     }
 
+    /**
+     * @return int
+     */
     public static function getContainerCount(): int
     {
         return static::$UUID_INDEX;
     }
 
+    /**
+     * @param false $deep
+     */
     private function invalidateChildren($deep = false)
     {
         foreach ($this->getChildren() as $child) {

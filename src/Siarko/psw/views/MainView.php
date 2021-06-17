@@ -1,161 +1,89 @@
 <?php
 
 namespace Siarko\psw\views;
+use Siarko\cli\bootstrap\Bootstrap;
 use Siarko\cli\io\input\event\KeyCodes;
 use Siarko\cli\io\input\event\KeyDownEvent;
+use Siarko\cli\io\input\Keyboard;
+use Siarko\cli\io\Output;
 use Siarko\cli\io\output\styles\BackgroundColor;
+use Siarko\cli\io\output\styles\Color;
 use Siarko\cli\io\output\styles\TextColor;
 use Siarko\cli\ui\components\base\border\lineBorder\LineBorder;
-use Siarko\cli\ui\components\base\border\lineBorder\LineBorderVariant;
-use Siarko\cli\ui\components\base\border\Margin;
 use Siarko\cli\ui\components\Checkbox;
 use Siarko\cli\ui\components\Container;
 use Siarko\cli\ui\components\InputLine;
 use Siarko\cli\ui\components\menu\listMenu\ListMenu;
-use Siarko\cli\ui\components\Modal;
 use Siarko\cli\ui\components\TextComponent;
 use Siarko\cli\ui\components\View;
-use Siarko\cli\ui\layouts\align\HorizontalAlign;
-use Siarko\cli\ui\layouts\align\VerticalAlign;
 use Siarko\cli\ui\layouts\LayoutFill;
 use Siarko\cli\ui\layouts\LayoutHorizontal;
-use Siarko\cli\ui\layouts\LayoutVertical;
 use Siarko\cli\ui\UIController;
-use Siarko\cli\util\unit\Percent;
+use Siarko\cli\util\os\Path;
 use Siarko\cli\util\unit\Pixel;
+use Siarko\psw\os\docker\Docker;
+use Siarko\psw\os\project\Project;
 
 class MainView extends View
 {
 
-
     public function __construct()
     {
+
         $mainContainer = new Container();
-        $mainContainer->setLayout(new LayoutHorizontal(['20%', '*']));
+        $mainContainer->setLayout(new LayoutFill());
         $mainContainer->setParent($this);
-        $mainContainer->setBackgroundColor(BackgroundColor::LIGHT_GREEN());
+        $mainContainer->setBackgroundColor(BackgroundColor::BLACK());
         $mainContainer->setBorder(
             (new LineBorder())
-                ->setColor(TextColor::BLACK())
-                ->setTitle("Main component")
+                ->setColor(TextColor::LIGHT_GRAY())
+                ->setTitle("Project Tools")
         );
 
 
-
-        $menu = new ListMenu([
-            'item1' => [
-                ListMenu::CONTENT => (new Container())->setLayout(new LayoutHorizontal(['*', new Pixel(2)]))->add(
-                    (new TextComponent("Item 1")),
-                    (new Checkbox())->focus()
-                )
-            ],
-            'item2' => (new Container())->setLayout(new LayoutHorizontal(['*',new Pixel(10), new Pixel(2)]))->add(
-                (new TextComponent("Item 2")),
-                (new InputLine())->focus(),
-                (new Checkbox())->focus()
-            ),
-            'item3' => [
-                ListMenu::CONTENT => (new Container())->setLayout(new LayoutHorizontal(['*', new Pixel(2)]))->add(
-                    (new TextComponent("Item 3")),
-                    (new Checkbox())->focus()
-                ),
+        $projects = Project::find(new Path(Bootstrap::getHomeDir().'/Projects'));
+        $menuList = [];
+        /** @var Project $project */
+        foreach ($projects as $project) {
+            $menuList[$project->getDirname()] = [
+                ListMenu::CONTENT => $project->getDirname(),
                 ListMenu::SUBMENU => [
-                    'item3.1' => "Item 3.1",
-                    'item3.2' => new TextComponent("Item 3.2"),
-                    'item3.3' => [
-                        ListMenu::SUBMENU => [
-                            'item3.3.1' => "Item 3.3.1"
-                        ]
+                    'exec' => [
+                        ListMenu::CONTENT => 'Local docker exec',
+                        ListMenu::HANDLER => function($data) use ($project){
+                            UIController::get()->pauseApp();
+                            Docker::ssh($project);
+                            UIController::get()->resumeApp();
+                        }
                     ],
-                    'item3.4' => [
+                    'cloud' => [
+                        ListMenu::CONTENT => 'Cloud tools',
                         ListMenu::SUBMENU => [
-                            'item3.4.1' => "Item 3.4.1"
+                            'stage' => 'Stage'
+                        ],
+                        ListMenu::DISABLED => true
+                    ],
+                    'options' => [
+                        ListMenu::CONTENT => 'Options',
+                        ListMenu::SUBMENU => [
+                            'rename' => 'Rename',
                         ]
                     ]
                 ]
-            ],
-            'item4' => "Item 4",
-            'item5' => "Item 5",
-            'item6' => "Item 6",
-            'item7' => [
-                ListMenu::CONTENT => "Item 7",
-                ListMenu::SUBMENU => [
-                    "item7.1" => "Item 7.1"
-                ]
-            ],
-            'item8' => "Item 8",
-        ]);
+            ];
+        }
 
-        $menu->onFocusChange(function($newState) use ($menu){
-            $menu->setBackgroundColor(($newState) ? BackgroundColor::LIGHT_PURPLE() : BackgroundColor::PURPLE());
-            $menu->setValid(false);
-        })->focus();
-        $menu->getSizing()->setMaxSize(null, new Pixel(8));
-        $menu->setShowBreadCrumbs(false);
+        $menu = new ListMenu($menuList);
+        $menu->focus();
+        $menu->setShowBreadCrumbs(true);
+        $menu->setSelectionColor(BackgroundColor::LIGHT_GRAY());
 
         $menuC = new Container();
-        $menuC->setBackgroundColor(BackgroundColor::GREEN());
+        $menuC->setBackgroundColor(BackgroundColor::DARK_GRAY());
         $menuC->add($menu);
 
-        $menu2 = new ListMenu([
-            'item1' => [
-                ListMenu::CONTENT => (new Container())->setLayout(new LayoutHorizontal(['*', new Pixel(2)]))->add(
-                    (new TextComponent("Item 1")),
-                    (new Checkbox())->focus()
-                )
-            ],
-            'item2' => (new Container())->setLayout(new LayoutHorizontal(['*',new Pixel(10), new Pixel(2)]))->add(
-                (new TextComponent("Item 2")),
-                (new InputLine())->focus(),
-                (new Checkbox())->focus()
-            ),
-            'item3' => [
-                ListMenu::CONTENT => (new Container())->setLayout(new LayoutHorizontal(['*', new Pixel(2)]))->add(
-                    (new TextComponent("Item 3")),
-                    (new Checkbox())->focus()
-                ),
-                ListMenu::SUBMENU => [
-                    'item3.1' => "Item 3.1",
-                    'item3.2' => new TextComponent("Item 3.2"),
-                    'item3.3' => [
-                        ListMenu::SUBMENU => [
-                            'item3.3.1' => "Item 3.3.1"
-                        ]
-                    ],
-                    'item3.4' => [
-                        ListMenu::SUBMENU => [
-                            'item3.4.1' => "Item 3.4.1"
-                        ]
-                    ]
-                ]
-            ],
-            'item4' => "Item 4",
-            'item5' => "Item 5",
-            'item6' => "Item 6",
-            'item7' => [
-                ListMenu::CONTENT => "Item 7",
-                ListMenu::SUBMENU => [
-                    "item7.1" => "Item 7.1"
-                ]
-            ],
-            'item8' => "Item 8",
-        ]);
-        $menu2->onFocusChange(function($newState) use ($menu2){
-            $menu2->setBackgroundColor(($newState) ? BackgroundColor::LIGHT_PURPLE() : BackgroundColor::PURPLE());
-            $menu2->setValid(false);
-        });
-
-        $c = new Container();
-        $c->add($menu2);
-        $mainContainer->add($menuC, $c);
-
+        $mainContainer->add($menuC);
         $mainContainer->setPermanentFocus(true);
-        $mainContainer->addKeyDownHandler(function(KeyDownEvent $event) use ($menu, $menu2){
-            if($event->isKey(KeyCodes::TAB)){
-                $menu->setFocus(!$menu->hasFocus());
-                $menu2->setFocus(!$menu2->hasFocus());
-            }
-        });
     }
 
 }

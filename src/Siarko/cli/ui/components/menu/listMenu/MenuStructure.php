@@ -3,18 +3,12 @@
 
 namespace Siarko\cli\ui\components\menu\listMenu;
 
-
 use Siarko\cli\io\output\StyledText;
 use Siarko\cli\ui\components\base\BaseComponent;
 use Siarko\cli\ui\components\base\border\lineBorder\LineBorder;
 use Siarko\cli\ui\components\base\Component;
-use Siarko\cli\ui\components\Container;
 use Siarko\cli\ui\components\TextComponent;
-use Siarko\cli\ui\layouts\align\HorizontalAlign;
-use Siarko\cli\ui\layouts\LayoutHorizontal;
-use Siarko\cli\ui\layouts\LayoutVertical;
 use Siarko\cli\util\Cacheable;
-use Siarko\cli\util\unit\Pixel;
 
 class MenuStructure
 {
@@ -75,13 +69,13 @@ class MenuStructure
                 if(array_key_exists(ListMenu::CONTENT, $data)){
                     $c = $data[ListMenu::CONTENT];
                     if(is_string($c)){
-                        $row[ListMenu::CONTENT] = new TextComponent($c);
+                        $row[ListMenu::CONTENT] = $this->getTextComponent($c);
                     }elseif ($c instanceof Component){
                         $row[ListMenu::CONTENT] = $c;
                     }
                     $row[ListMenu::TITLE] = $this->getTitle($c, $id);
                 }else{
-                    $row[ListMenu::CONTENT] = new TextComponent($id);
+                    $row[ListMenu::CONTENT] = $this->getTextComponent($id);
                     $row[ListMenu::TITLE] = $this->getTitle($id);
                 }
                 if(array_key_exists(ListMenu::SUBMENU, $data) && is_array($data[ListMenu::SUBMENU])){
@@ -178,6 +172,15 @@ class MenuStructure
 
         return $result;
 
+    }
+
+    /**
+     * @param $text
+     * @return TextComponent
+     */
+    private function getTextComponent($text): TextComponent
+    {
+        return new TextComponent($text);
     }
 
 

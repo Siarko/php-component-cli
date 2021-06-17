@@ -151,7 +151,6 @@ abstract class DividedLayout extends AbstractLayout
     protected function calculateValuesForComponent(BaseComponent $component, int $targetValue)
     {
         //count of active and not floating components
-        //TODO probably should be cached and revalidated on add/remove child component
         $childCount = count($this->parentComponent->getChildren(
             ComponentFilter::active(), ComponentFilter::floating(true)
         ));

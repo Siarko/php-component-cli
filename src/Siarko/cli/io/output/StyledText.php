@@ -12,7 +12,7 @@ class StyledText
 {
     private string $text = '';
     private array $styles = [];
-    private string $textColor;
+    private TextColor $textColor;
     private BackgroundColor $backgroundColor;
 
     function __construct($text = '')
@@ -30,6 +30,14 @@ class StyledText
     {
         $this->textColor = $color;
         return $this;
+    }
+
+    /**
+     * @return styles\Color|string
+     */
+    public function getTextColor(): TextColor
+    {
+        return $this->textColor;
     }
 
     /**

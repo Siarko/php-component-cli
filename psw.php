@@ -22,7 +22,7 @@ require_once "vendor/autoload.php";
 
 Profiler::setDefaultTimeFactor(\Siarko\cli\util\profiler\TimeFactor::MILLISECONDS());
 Profiler::start("complete_run", \Siarko\cli\util\profiler\TimeFactor::SECONDS());
-Profiler::setEnabled(true);
+Profiler::setEnabled(false);
 
 MainConfig::get();
 

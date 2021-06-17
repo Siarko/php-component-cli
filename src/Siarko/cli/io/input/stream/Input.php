@@ -6,6 +6,7 @@ namespace Siarko\cli\io\input\stream;
 
 use Exception;
 use Siarko\cli\bootstrap\Bootstrap;
+use Siarko\cli\io\Output;
 
 class Input
 {
@@ -14,27 +15,35 @@ class Input
 
     /* @var $buffer mixed */
     private $buffer = false;
+    private bool $isReleased = false;
 
     public function __construct()
     {
-        system(
-            'stty cbreak -echo'
-        );
-        $this->initStream();
+        $this->catchStream();
     }
 
-    private function initStream()
+    public function catchStream()
     {
         if (!$this->isStreamWorking(STDIN)) {
             return false;
         }
+        $this->isReleased = false;
         stream_set_blocking(STDIN, 0);
+        //fopen(STDIN, 'r');
         $this->stream = STDIN;
         return true;
     }
 
+    public function releaseStream(){
+        stream_set_blocking(STDIN, 1);
+        $this->isReleased = true;
+    }
+
     public function isBufferEmpty()
     {
+        if($this->isReleased){
+            return true;
+        }
         //buffer may contain some data from previous read
         if ($this->buffer) {
             return false;
@@ -60,7 +69,7 @@ class Input
      */
     private function readString()
     {
-        if (!$this->isStreamWorking($this->stream) && !$this->initStream()) {
+        if (!$this->isStreamWorking($this->stream) && !$this->catchStream()) {
             Bootstrap::get()->stop();
             Bootstrap::get()->cleanup();
             return;
@@ -80,9 +89,11 @@ class Input
             $this->buffer = false;
             return;
         }
+        stream_set_blocking($this->stream, 0);
         $bytes = [];
         do {
-            $char = ord(fgetc($this->stream));
+            $r = fgetc($this->stream);
+            $char = ord($r);
             if ($char) {
                 $bytes[] = $char;
             }
@@ -94,9 +105,7 @@ class Input
     public function close()
     {
         if ($this->isStreamWorking($this->stream)) {
-            system(
-                'stty -cbreak echo'
-            );
+            Output::get()->enableCursor();
             fclose($this->stream);
         }
     }
