@@ -1,13 +1,14 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Siarko\cli\ui\components\menu\listMenu;
 
-
 use Siarko\cli\io\input\event\KeyDownEvent;
 use Siarko\cli\io\output\styles\BackgroundColor;
+use Siarko\cli\ui\components\base\BaseComponent;
 use Siarko\cli\ui\components\base\Component;
 use Siarko\cli\ui\components\Container;
+use Siarko\cli\ui\components\menu\listMenu\structure\Node;
 use Siarko\cli\ui\components\TextComponent;
 use Siarko\cli\ui\exceptions\IncorrectProportionsException;
 use Siarko\cli\ui\layouts\align\HorizontalAlign;
@@ -23,16 +24,14 @@ class ListMenu extends Component
 
     const CONTENT = 'content';
     const SUBMENU = 'submenu';
-    const CONTAINER = 'container';
     const HANDLER = 'handler';
-    const TITLE = 'title';
     const DISABLED = 'disabled';
 
     //Structure passed bu user and parsed
     private MenuStructure $structure;
     //path of selected menu
     private ?string $menuPath;
-    private Component $lastSelected;
+    private BaseComponent $lastSelected;
     private Component $lastContainer;
     private ?BackgroundColor $selectionColor = null;
 
@@ -95,7 +94,11 @@ class ListMenu extends Component
     public function getMenuPath(bool $stripLast = false): string
     {
         if ($stripLast) {
-            return substr($this->menuPath, 0, strrpos($this->menuPath, '/'));
+            $slashPos = strrpos($this->menuPath, '/');
+            if($slashPos === false){
+                return '';
+            }
+            return substr($this->menuPath, 0, $slashPos);
         } else {
             return $this->menuPath;
         }
@@ -107,7 +110,11 @@ class ListMenu extends Component
      */
     public function getSelectedItem(): string
     {
-        return trim(substr($this->menuPath, strrpos($this->menuPath, '/')), '/');
+        $slashPos = strrpos($this->menuPath, '/');
+        if($slashPos === false){
+            return $this->menuPath;
+        }
+        return trim(substr($this->menuPath, $slashPos), '/');
     }
 
     /**
@@ -160,14 +167,14 @@ class ListMenu extends Component
 
     /**
      * Iterate over structure and add all containers
-     * @param $data
+     * @param Node $data
      */
-    private function addContainers($data)
+    private function addContainers(Node $data)
     {
-        if (array_key_exists(self::SUBMENU, $data) && !is_null($data[self::SUBMENU])) {
-            $this->add($data[self::CONTAINER]);
-            foreach ($data[self::SUBMENU] as $sm) {
-                $this->addContainers($sm);
+        if ($data->hasChildren()) {
+            $this->add($data->getContainer());
+            foreach ($data->getChildren() as $children) {
+                $this->addContainers($children);
             }
         }
     }
@@ -180,8 +187,7 @@ class ListMenu extends Component
         Profiler::start();
 
         $menuItems = $this->structure->getData($this->getMenuPath(true));
-        /** @var Component $container */
-        $container = $menuItems[self::CONTAINER];
+        $container = $menuItems->getContainer();
         if ($container->getUUID() != $this->lastContainer->getUUID()) {
             $this->lastContainer->setActive(false);
             $container->setActive(true);
@@ -193,7 +199,7 @@ class ListMenu extends Component
         $this->deselect($this->lastSelected);
         //update selected element
         /** @var Component $selected */
-        $selected = $this->structure->getData($this->getMenuPath())[self::CONTENT];
+        $selected = $this->structure->getData($this->getMenuPath())->getContent();
         //select current component
         $this->select($selected);
         $this->lastSelected = $selected;
@@ -215,21 +221,17 @@ class ListMenu extends Component
         }
         $menu = $this->structure->getData($this->getMenuPath(true));
         //if submenu exists for current menu (should always be true)
-        if (array_key_exists(self::SUBMENU, $menu) && !is_null($menu[self::SUBMENU])) {
-            $items = $menu[self::SUBMENU];
-            $itemCount = count($items);
-            //if overflow exists
-            if ($this->lastHeight < $itemCount) {
-                $this->updateItemWindow();
-                $this->updateItemsVisibility();
-            }
+        //if overflow exists
+        if ($menu->hasChildren() && $this->lastHeight < $menu->getChildrenCount()) {
+            $this->updateItemWindow();
+            $this->updateItemsVisibility();
         }
     }
 
     private function updateItemWindow()
     {
         $menu = $this->structure->getData($this->getMenuPath(true));
-        $items = $menu[self::SUBMENU];
+        $items = $menu->getChildren();
         $selectedItem = $this->getSelectedItem();
         //move item window
         $position = array_search($selectedItem, array_keys($items));
@@ -239,7 +241,7 @@ class ListMenu extends Component
         }
         //down movement
         if ($position > ($this->itemWindowStart + $this->lastHeight) - 2) {
-            if ($this->itemWindowStart + $this->lastHeight < count($items)) {
+            if ($this->itemWindowStart + $this->lastHeight < $menu->getChildrenCount()) {
                 $this->itemWindowStart++;
             }
         }
@@ -250,7 +252,7 @@ class ListMenu extends Component
         $menu = $this->structure->getData($this->getMenuPath(true));
         //update items according to item window
         $i = 0;
-        foreach ($menu[self::SUBMENU] as $item) {
+        foreach ($menu->getChildren() as $item) {
             $flag = false;
             if ($i >= $this->itemWindowStart && $i < $this->itemWindowStart + $this->lastHeight) {
                 $flag = true;
@@ -258,7 +260,7 @@ class ListMenu extends Component
             $item[self::CONTENT]->getParent()->setActive($flag);
             $i++;
         }
-        $menu[self::CONTAINER]->setValid(false);
+        $menu->getContainer()->setValid(false);
     }
 
     /**
@@ -266,7 +268,7 @@ class ListMenu extends Component
      */
     private function selectPreviousOption()
     {
-        $set = $this->structure->getData($this->getMenuPath(true))[self::SUBMENU];
+        $set = $this->structure->getData($this->getMenuPath(true))->getChildren();
         $this->setMenuPath($this->selectPreviousOptionFromSet($set, $this->getSelectedItem()), true);
         $this->updateSelection();
     }
@@ -276,7 +278,7 @@ class ListMenu extends Component
      */
     private function selectNextOption()
     {
-        $set = array_reverse($this->structure->getData($this->getMenuPath(true))[self::SUBMENU]);
+        $set = array_reverse($this->structure->getData($this->getMenuPath(true))->getChildren());
         $this->setMenuPath($this->selectPreviousOptionFromSet($set, $this->getSelectedItem()), true);
         $this->updateSelection();
     }
@@ -298,8 +300,8 @@ class ListMenu extends Component
     private function selectNextMenu()
     {
         $data = $this->structure->getData($this->getMenuPath());
-        if (!is_null($data[self::SUBMENU])) {
-            $firstKey = array_key_first($data[self::SUBMENU]);
+        if ($data->hasChildren()) {
+            $firstKey = array_key_first($data->getChildren());
             $this->appendMenuPath($firstKey);
         }
         $this->updateSelection();
@@ -329,8 +331,8 @@ class ListMenu extends Component
     private function execHandler()
     {
         $data = $this->structure->getData($this->getMenuPath());
-        if (array_key_exists(self::HANDLER, $data)) {
-            $data[self::HANDLER]($data);
+        if ($data->hasHandler()) {
+            $data->executeHandler($data);
         }
     }
 
@@ -338,7 +340,7 @@ class ListMenu extends Component
      * Called when some element is deselected in item window
      * @param Component $component
      */
-    protected function deselect(Component $component)
+    protected function deselect(BaseComponent $component)
     {
         //clear background color -> parent will be transparent
         $component->getParent()->setBackgroundColor(null);
@@ -354,7 +356,7 @@ class ListMenu extends Component
      * Called when element is selected in item window
      * @param Component $component
      */
-    protected function select(Component $component)
+    protected function select(BaseComponent $component)
     {
         if ($component instanceof TextComponent) {
             //save current text color
@@ -369,23 +371,24 @@ class ListMenu extends Component
     /**
      * Create container with divided layout for single menu
      * @param array $submenu
-     * @return Container
+     * @return MenuPageContainer
      * @throws IncorrectProportionsException
      */
-    public function createContainer(array $submenu): Container
+    public function createContainer(array $submenu): MenuPageContainer
     {
         $container = new MenuPageContainer();
         $container->setMenuObject($this);
         $layout = new LayoutVertical($this->generateDivisions(count($submenu)));
         $container->setLayout($layout);
+        /** @var Node $data */
         foreach ($submenu as $data) {
             $subContainer = new Container();
             $subContainer->setLayout(new LayoutHorizontal(['*', '3px']));
             $pointer = (new TextComponent("→"))->setTextAlign(HorizontalAlign::MIDDLE());
-            if (is_null($data[self::SUBMENU])) {
+            if (!$data->hasChildren()) {
                 $pointer->setActive(false);
             }
-            $subContainer->add($data[ListMenu::CONTENT], $pointer);
+            $subContainer->add($data->getContent(), $pointer);
             $container->add($subContainer);
         }
         $container->setActive(false);
@@ -454,8 +457,7 @@ class ListMenu extends Component
         if (!$this->isActive() || !$this->hasFocus()) {
             return false;
         }
-        /** @var Component $container */
-        $container = $this->structure->getData($this->getMenuPath(true))[self::CONTAINER];
+        $container = $this->structure->getData($this->getMenuPath(true))->getContainer();
         if (!$container->_receiveEvent($event)) {
             return $container->_passEvent($event);
         }
@@ -467,11 +469,11 @@ class ListMenu extends Component
         //run only when direct parent is set
         if (!$revalidation) {
             $menu = $this->structure->getData('');
-            $firstId = array_key_first($menu[self::SUBMENU]);
+            $firstId = array_key_first($menu->getChildren());
             $this->setMenuPath($firstId);
-            $this->lastSelected = $menu[self::SUBMENU][$firstId][self::CONTENT];
+            $this->lastSelected = $menu->getChildren()[$firstId]->getContent();
             $this->select($this->lastSelected);
-            $this->lastContainer = $menu[self::CONTAINER];
+            $this->lastContainer = $menu->getContainer();
             $this->lastContainer->setActive(true);
         }
     }

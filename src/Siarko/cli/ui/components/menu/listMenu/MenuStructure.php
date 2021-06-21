@@ -7,6 +7,8 @@ use Siarko\cli\io\output\StyledText;
 use Siarko\cli\ui\components\base\BaseComponent;
 use Siarko\cli\ui\components\base\border\lineBorder\LineBorder;
 use Siarko\cli\ui\components\base\Component;
+use Siarko\cli\ui\components\menu\listMenu\structure\Node;
+use Siarko\cli\ui\components\menu\listMenu\structure\RootNode;
 use Siarko\cli\ui\components\TextComponent;
 use Siarko\cli\util\Cacheable;
 
@@ -14,7 +16,7 @@ class MenuStructure
 {
     use Cacheable;
 
-    private array $structure;
+    private RootNode $structure;
     private bool $valid = true;
 
     /**
@@ -35,18 +37,15 @@ class MenuStructure
         $this->structure = $this->validateStructure($structure);
     }
 
-    private function validateStructure(array $structure): array
+    private function validateStructure(array $structure): RootNode
     {
-        if(empty($structure)){ return []; }
+        if(empty($structure)){ return new RootNode(); }
         $menuStructure = $this->_validateStructure($structure);
         $container = $this->menu->createContainer($menuStructure);
         if($this->isShowBreadcrumbs()){
             $this->setContainerTitle($container, "/");
         }
-        return [
-            ListMenu::SUBMENU => $menuStructure,
-            ListMenu::CONTAINER => $container
-        ];
+        return new RootNode($menuStructure, $container);
     }
 
     /**
@@ -61,7 +60,7 @@ class MenuStructure
         //TODO change this from assoc array to object based approach
         $result = [];
         foreach ($structure as $id => $data) {
-            $row = [];
+            $node = new Node();
             if(is_string($data) || $data instanceof Component){
                 $data = [ListMenu::CONTENT => $data];
             }
@@ -69,32 +68,32 @@ class MenuStructure
                 if(array_key_exists(ListMenu::CONTENT, $data)){
                     $c = $data[ListMenu::CONTENT];
                     if(is_string($c)){
-                        $row[ListMenu::CONTENT] = $this->getTextComponent($c);
+                        $node->setContent($this->getTextComponent($c));
                     }elseif ($c instanceof Component){
-                        $row[ListMenu::CONTENT] = $c;
+                        $node->setContent($c);
                     }
-                    $row[ListMenu::TITLE] = $this->getTitle($c, $id);
+                    $node->setTitle($this->getTitle($c, $id));
                 }else{
-                    $row[ListMenu::CONTENT] = $this->getTextComponent($id);
-                    $row[ListMenu::TITLE] = $this->getTitle($id);
+                    $node->setContent($this->getTextComponent($id));
+                    $node->setTitle($this->getTitle($id));
                 }
                 if(array_key_exists(ListMenu::SUBMENU, $data) && is_array($data[ListMenu::SUBMENU])){
-                    $b = $breadcrumbs."/".$row[ListMenu::TITLE];
-                    $row[ListMenu::SUBMENU] = $this->_validateStructure($data[ListMenu::SUBMENU], $b);
+                    $b = $breadcrumbs."/".$node->getTitle();
+                    $node->setChildren($this->_validateStructure($data[ListMenu::SUBMENU], $b));
 
-                    $container = $this->menu->createContainer($row[ListMenu::SUBMENU]);
+                    $container = $this->menu->createContainer($node->getChildren());
                     if($this->isShowBreadcrumbs()){
                         $this->setContainerTitle($container, $b);
                     }
-                    $row[ListMenu::CONTAINER] = $container;
+                    $node->setContainer($container);
                 }else{
-                    $row[ListMenu::SUBMENU] = null;
+                    $node->setChildren([]);
                 }
                 if(array_key_exists(ListMenu::HANDLER, $data) && is_callable($data[ListMenu::HANDLER])){
-                    $row[ListMenu::HANDLER] = $data[ListMenu::HANDLER];
+                    $node->setHandler($data[ListMenu::HANDLER]);
                 }
             }
-            $result[$id] = $row;
+            $result[$id] = $node;
         }
         return $result;
     }
@@ -102,9 +101,9 @@ class MenuStructure
     /**
      * Get menu data by path
      * @param string $menuPath
-     * @return array
+     * @return Node
      */
-    public function getData(string $menuPath): array
+    public function getData(string $menuPath): Node
     {
         if(strlen($menuPath) == 0){
             return $this->structure;
@@ -113,14 +112,16 @@ class MenuStructure
             return $this->getCache($menuPath);
         }
         $path = explode('/', $menuPath);
-        $current = &$this->structure[ListMenu::SUBMENU];
-        $p = &$this->structure;
+        $current = $this->structure->getChildren();
+        $result = null;
         foreach ($path as $part) {
-            $p = &$current[$part];
-            $current = &$current[$part][ListMenu::SUBMENU];
+            $result = &$current[$part];
+            if(array_key_exists($part, $current)){
+                $current = $current[$part]->getChildren();
+            }
         }
-        $this->setCache($menuPath, $p);
-        return $p;
+        $this->setCache($menuPath, $result);
+        return $result;
     }
 
     /**
