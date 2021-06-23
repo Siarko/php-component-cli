@@ -9,6 +9,7 @@ use Siarko\cli\io\output\styles\BackgroundColor;
 use Siarko\cli\ui\components\ComponentFilter;
 use Siarko\cli\ui\components\Modal;
 use Siarko\cli\ui\components\View;
+use Siarko\cli\ui\exceptions\TooManyResultsException;
 use Siarko\cli\ui\layouts\AbstractLayout;
 use Siarko\cli\ui\layouts\LayoutFill;
 use Siarko\cli\util\BoundingBox;
@@ -27,6 +28,9 @@ abstract class BaseComponent implements Drawable
 
     //UUID unique identifier
     private int $UUID;
+
+    //Friendly name, can be used for searching element in parent component
+    private string $name = '';
 
     private ?BackgroundColor $backgroundColor = null;
     //If component is focused, it will receive keyboard input
@@ -63,6 +67,8 @@ abstract class BaseComponent implements Drawable
      * @var BaseComponent[]
      */
     private array $children = [];
+
+    private array $childrenByName = [];
 
     /**
      * BaseComponent constructor.
@@ -115,7 +121,7 @@ abstract class BaseComponent implements Drawable
             Profiler::end();
         }
 
-        $this->updateContent( true);
+        $this->updateContent(true);
         $this->setValid(true);
     }
 
@@ -127,7 +133,7 @@ abstract class BaseComponent implements Drawable
     {
         if (!$this->isValid()) {
             Profiler::start('self-content');
-            $bounds = $this->getCache(self::CACHE_BB, function(){
+            $bounds = $this->getCache(self::CACHE_BB, function () {
                 return $this->getBB();
             });
             $contentBB = $bounds->clone();
@@ -284,7 +290,9 @@ abstract class BaseComponent implements Drawable
      * Revalidation == true when one of parent's parent is set
      * @param bool $revalidation
      */
-    protected function onParentSet(bool $revalidation){}
+    protected function onParentSet(bool $revalidation)
+    {
+    }
 
     /**
      * @return BackgroundColor
@@ -361,6 +369,44 @@ abstract class BaseComponent implements Drawable
     }
 
     /**
+     * Find children by name
+     * @param string $name
+     * @param bool $singleNode - if only one node should be returned
+     * @return BaseComponent|BaseComponent[]
+     * @throws TooManyResultsException
+     */
+    public function findChildren(string $name, bool $singleNode)
+    {
+        $path = explode('/', $name);
+        $res = $this->_findChildren($path);
+        $c = count($res);
+        if($singleNode){
+            if($c > 1){
+                throw new TooManyResultsException("Found {$c} components instead of one requested");
+            }else{
+                return $res[0];
+            }
+        }
+        return $res;
+    }
+
+    private function _findChildren(array $path)
+    {
+        if (empty($path)) {
+            return [$this];
+        }
+        $part = array_shift($path);
+        $result = [];
+        if (array_key_exists($part, $this->childrenByName)) {
+            /** @var BaseComponent $item */
+            foreach ($this->childrenByName[$part] as $item) {
+                $result = array_merge($result, $item->_findChildren($path));
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Add new child component
      * @param BaseComponent ...$components
      * @return $this
@@ -369,6 +415,7 @@ abstract class BaseComponent implements Drawable
     {
         foreach ($components as $component) {
             $this->children[] = $component;
+            $this->addChildByName($component);
             $component->setParent($this);
             $component->onParentSet(false);
         }
@@ -385,7 +432,19 @@ abstract class BaseComponent implements Drawable
         foreach ($components as $component) {
             $key = array_search($component, $this->children);
             if ($key !== false) {
-                unset($this->children, $key);
+                unset($this->children[$key]);
+            }
+            //remove component from named index
+            if (strlen($component->getName()) > 0) {
+                $name = $component->getName();
+                if (count($this->childrenByName[$name]) > 1) {
+                    $key = array_search($component, $this->childrenByName[$name]);
+                    if ($key !== false) {
+                        unset($this->childrenByName[$key]);
+                    }
+                } else {
+                    unset($this->childrenByName[$name]);
+                }
             }
         }
         return $this;
@@ -397,6 +456,7 @@ abstract class BaseComponent implements Drawable
     public function abortAllChildren()
     {
         $this->children = [];
+        $this->childrenByName = [];
     }
 
     /* SIZING => PADDING / MARGIN / BORDER */
@@ -433,7 +493,13 @@ abstract class BaseComponent implements Drawable
      */
     public function setVisible(bool $visible): BaseComponent
     {
+        $old = $this->visible;
         $this->visible = $visible;
+        if ($this->visible != $old) {
+            if($this->getParent()){
+                $this->getParent()->setValid(false);
+            }
+        }
         return $this;
     }
 
@@ -509,7 +575,7 @@ abstract class BaseComponent implements Drawable
     public function setValid(bool $valid): BaseComponent
     {
         //invalidate children but don't do it over and over again
-        if(!$valid && $this->valid){
+        if (!$valid && $this->valid) {
             $this->getLayout()->setValid(false);
             $this->cachePurge();
             $this->invalidateChildren(true);
@@ -533,6 +599,24 @@ abstract class BaseComponent implements Drawable
     public function setUUID(int $UUID): void
     {
         $this->UUID = $UUID;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @param string $name
+     * @return BaseComponent
+     */
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        return $this;
     }
 
     protected function getComponentDebugPath()
@@ -572,7 +656,8 @@ abstract class BaseComponent implements Drawable
      * @param $id
      * @param $value
      */
-    public function setCustomFlag($id, $value){
+    public function setCustomFlag($id, $value)
+    {
         $this->customFlags[$id] = $value;
     }
 
@@ -581,10 +666,11 @@ abstract class BaseComponent implements Drawable
      * @param null $default
      * @return mixed|null
      */
-    public function getCustomFlag($id, $default = null){
-        if(array_key_exists($id, $this->customFlags)){
+    public function getCustomFlag($id, $default = null)
+    {
+        if (array_key_exists($id, $this->customFlags)) {
             return $this->customFlags[$id];
-        }else{
+        } else {
             return $default;
         }
     }
@@ -614,10 +700,20 @@ abstract class BaseComponent implements Drawable
     {
         foreach ($this->getChildren() as $child) {
             $child->setValid(false);
-            if($deep){
+            if ($deep) {
                 $child->invalidateChildren($deep);
             }
 
+        }
+    }
+
+    private function addChildByName(BaseComponent $component)
+    {
+        if (strlen($component->getName()) > 0) {
+            if (!array_key_exists($component->getName(), $this->childrenByName)) {
+                $this->childrenByName[$component->getName()] = [];
+            }
+            $this->childrenByName[$component->getName()][] = $component;
         }
     }
 }

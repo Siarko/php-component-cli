@@ -7,7 +7,7 @@ namespace Siarko\cli\util;
 class ArrayHelper
 {
 
-    public static function getValue(array $data, $path = null): ?array
+    public static function getValue(array $data, $path = null)
     {
         if(is_null($path)){
             return $data;

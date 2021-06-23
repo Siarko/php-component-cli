@@ -59,7 +59,7 @@ class TextComponent extends Component
     /**
      * @return StyledText
      */
-    public function getText(): StyledText
+    public function getStyledText(): StyledText
     {
         return $this->text;
     }

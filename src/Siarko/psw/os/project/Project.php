@@ -4,50 +4,85 @@
 namespace Siarko\psw\os\project;
 
 
+use Siarko\cli\util\ArrayHelper;
+use Siarko\cli\util\exceptions\FileNotExistsException;
 use Siarko\cli\util\os\Path;
+use Siarko\psw\os\docker\Container;
 use Siarko\psw\os\docker\Docker;
 use Siarko\psw\os\project\exceptions\ProjectStructureInvalidException;
 
 class Project
 {
-    private const PROJECT_REQUIRED_DIRS = ['magento', 'docker'];
     private string $name;
     private string $dirname;
     private Path $path;
     private bool $valid = true;
 
-    public function __construct(Path $path)
-    {
-        $this->dirname = basename($path->getPath());
-        $this->path = $path;
-        $this->validate();
-    }
-
-    private function validate()
-    {
-        foreach (self::PROJECT_REQUIRED_DIRS as $PROJECT_REQUIRED_DIR) {
-            if (!(new Path($this->path . "/" . $PROJECT_REQUIRED_DIR))->exists()) {
-                $this->valid = false;
-            }
-        }
-    }
+    private static $UNKNOWN_NAME_PREFIX = 'Unknown';
+    private static $UNKNOWN_NAME_COUNTER = 0;
+    /**
+     * @var Container[]
+     */
+    private array $containers = [];
 
     /**
      * Find all projects in given path
-     * @param Path $root
      * @return array
-     * @throws \Siarko\cli\util\exceptions\FileNotExistsException
+     * @throws FileNotExistsException
      */
-    public static function find(Path $root): array
+    public static function find(): array
     {
         $containerData = Docker::getContainers();
-        $list = preg_filter('/^local\..*\\.com$/', '$0', $root->list());
         $result = [];
-        foreach ($list as $name) {
-            $result[] = new Project(new Path($root . '/' . $name));
+        foreach ($containerData as $containerDatum) {
+            $projectName = ArrayHelper::getValue($containerDatum, 'Config/Labels/com.docker.compose.project');
+            if(is_null($projectName)){
+                continue;
+            }
+            if (!array_key_exists($projectName, $result)) {
+                $result[$projectName] = new Project($projectName);
+            }
+            $result[$projectName]->addContainer(new Container($containerDatum));
         }
+
         return $result;
     }
+
+    /**
+     * Project constructor.
+     * @param string $name
+     * @param Container[] $containers
+     */
+    public function __construct(string $name, array $containers = [])
+    {
+        $this->setName($name);
+        $this->setContainers($containers);
+    }
+
+    /**
+     * @return Container[]
+     */
+    public function getContainers(): array
+    {
+        return $this->containers;
+    }
+
+    /**
+     * @param Container[] $containers
+     */
+    public function setContainers(array $containers): void
+    {
+        $this->containers = $containers;
+    }
+
+    /**
+     * @param Container $container
+     */
+    public function addContainer(Container $container)
+    {
+        array_push($this->containers, $container);
+    }
+
 
     /**
      * @return string
@@ -79,5 +114,33 @@ class Project
     public function getFullPath(): Path
     {
         return $this->path;
+    }
+
+    /**
+     * Is any container running for this project
+     * @return bool
+     */
+    public function isAnyRunning(): bool
+    {
+        foreach ($this->getContainers() as $container) {
+            if($container->isRunning()){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Are all containers running for this project
+     * @return bool
+     */
+    public function isFullyRunning(): bool
+    {
+        foreach ($this->getContainers() as $container) {
+            if(!$container->isRunning()){
+                return false;
+            }
+        }
+        return true;
     }
 }

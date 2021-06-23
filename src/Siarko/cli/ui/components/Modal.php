@@ -10,10 +10,11 @@ class Modal extends Container
 {
 
     private ?BoundingBox $size = null;
+    private ?\Closure $sizeGenerator = null;
 
-    public function __construct($parent = null)
+    public function __construct()
     {
-        parent::__construct($parent);
+        parent::__construct();
         $this->setLayer(1000);
         $this->setFloating(true);
         $this->setVisible(false);
@@ -26,7 +27,7 @@ class Modal extends Container
      */
     protected function getBBAsChild(): BoundingBox
     {
-        return parent::getScreenBB();
+        return $this->getSize();
     }
 
 
@@ -35,6 +36,13 @@ class Modal extends Container
      */
     public function getSize(): ?BoundingBox
     {
+        if($this->sizeGenerator instanceof \Closure){
+            $gen = $this->sizeGenerator;
+            $this->size = $gen(parent::getScreenBB());
+        }
+        if (is_null($this->size)){
+            $this->size = parent::getScreenBB();
+        }
         return $this->size;
     }
 
@@ -47,5 +55,14 @@ class Modal extends Container
         $this->size = $size;
         return $this;
     }
+
+    /**
+     * Screen size (BoundingBox) is passed to generator during execution
+     * @param \Closure $generator
+     */
+    public function setSizeGenerator(\Closure $generator){
+        $this->sizeGenerator = $generator;
+    }
+
 
 }

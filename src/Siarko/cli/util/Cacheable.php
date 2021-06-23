@@ -60,15 +60,20 @@ trait Cacheable
     /**
      * @param $key
      * @param null $defaultValue
+     * @param bool $setIfNull
      * @return mixed|null
      */
-    protected function getCache($key, $defaultValue = null){
+    protected function getCache($key, $defaultValue = null, bool $setIfNull = false){
         if($this->cacheExists($key)){
             return $this->_cache[$key];
         }
-        if(is_callable($defaultValue)){
-            return $defaultValue();
+        $result = $defaultValue;
+        if(is_callable($result)){
+            $result = $result();
         }
-        return $defaultValue;
+        if($setIfNull){
+            $this->setCache($key, $result);
+        }
+        return $result;
     }
 }

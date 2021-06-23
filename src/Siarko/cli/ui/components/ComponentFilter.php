@@ -53,4 +53,21 @@ class ComponentFilter
         return $new;
 
     }
+
+    /**
+     * Get count of components filtered by attribute
+     * @param array $components
+     * @param string $classname
+     * @return int
+     */
+    public static function count(array $components, \Closure $filter): int
+    {
+        $count = 0;
+        foreach ($components as $component) {
+            if($filter($component)){
+                $count++;
+            }
+        }
+        return $count;
+    }
 }

@@ -9,6 +9,7 @@ use Siarko\cli\ui\components\base\BaseComponent;
 use Siarko\cli\ui\components\base\Component;
 use Siarko\cli\ui\components\Container;
 use Siarko\cli\ui\components\menu\listMenu\structure\Node;
+use Siarko\cli\ui\components\menu\listMenu\structure\RootNode;
 use Siarko\cli\ui\components\TextComponent;
 use Siarko\cli\ui\exceptions\IncorrectProportionsException;
 use Siarko\cli\ui\layouts\align\HorizontalAlign;
@@ -42,7 +43,11 @@ class ListMenu extends Component
     private MenuKeyBindings $keyBindings;
 
 
-    public function __construct(array $structure = [])
+    /**
+     * ListMenu constructor.
+     * @param array|RootNode $structure
+     */
+    public function __construct($structure)
     {
         parent::__construct();
 
@@ -72,10 +77,10 @@ class ListMenu extends Component
     }
 
     /**
-     * @param array $structure
+     * @param array|RootNode $structure
      * @return ListMenu
      */
-    public function setStructure(array $structure): ListMenu
+    public function setStructure($structure): ListMenu
     {
         $this->abortAllChildren();
         $this->structure->set($structure);
@@ -348,7 +353,7 @@ class ListMenu extends Component
         $component->getParent()->setCustomFlag('selected', false);
         if ($component instanceof TextComponent) {
             //get previous text color
-            $component->getText()->setTextColor($component->getCustomFlag('nativeTextColor'));
+            $component->getStyledText()->setTextColor($component->getCustomFlag('nativeTextColor'));
         }
     }
 
@@ -360,8 +365,8 @@ class ListMenu extends Component
     {
         if ($component instanceof TextComponent) {
             //save current text color
-            $component->setCustomFlag('nativeTextColor', $component->getText()->getTextColor());
-            $component->getText()->setTextColor($this->getBackgroundColor()->getTextColor());
+            $component->setCustomFlag('nativeTextColor', $component->getStyledText()->getTextColor());
+            $component->getStyledText()->setTextColor($this->getBackgroundColor()->getTextColor());
         }
         $component->getParent()->setBackgroundColor($this->getSelectionColor());
         $component->getParent()->setValid(false);

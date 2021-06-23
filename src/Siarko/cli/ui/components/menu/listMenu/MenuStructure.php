@@ -9,6 +9,7 @@ use Siarko\cli\ui\components\base\border\lineBorder\LineBorder;
 use Siarko\cli\ui\components\base\Component;
 use Siarko\cli\ui\components\menu\listMenu\structure\Node;
 use Siarko\cli\ui\components\menu\listMenu\structure\RootNode;
+use Siarko\cli\ui\components\menu\listMenu\structure\UnexpectedMenuStructureFormat;
 use Siarko\cli\ui\components\TextComponent;
 use Siarko\cli\util\Cacheable;
 
@@ -31,21 +32,51 @@ class MenuStructure
         $this->menu = $menu;
     }
 
-    public function set(array $structure){
-        $this->valid = !empty($structure);
+    public function set($structure)
+    {
+        if (is_array($structure)) {
+            $this->valid = !empty($structure);
+        }else{
+            $this->valid = true;
+        }
         $this->cachePurge();
         $this->structure = $this->validateStructure($structure);
     }
 
-    private function validateStructure(array $structure): RootNode
+    /**
+     * @throws UnexpectedMenuStructureFormat
+     * @throws \Siarko\cli\ui\exceptions\IncorrectProportionsException
+     */
+    private function validateStructure($structure): RootNode
     {
-        if(empty($structure)){ return new RootNode(); }
-        $menuStructure = $this->_validateStructure($structure);
-        $container = $this->menu->createContainer($menuStructure);
-        if($this->isShowBreadcrumbs()){
+        $result = null;
+        if(is_array($structure)){
+            if (empty($structure)) {
+                return new RootNode();
+            }
+            $menuStructure = $this->_validateArrayStructure($structure);
+            $container = $this->menu->createContainer($menuStructure);
+            $result = new RootNode($menuStructure, $container);
+        }elseif ($structure instanceof RootNode){
+            if(is_null($structure->getContainer())){
+                $this->_validateObjectStructure($structure->getChildren());
+                $container = $this->menu->createContainer($structure->getChildren());
+                /*if ($this->isShowBreadcrumbs()) {
+                    $this->setContainerTitle($container, "/");
+                }*/
+                $structure->setContainer($container);
+            }
+            $result = $structure;
+        }else{
+            throw new UnexpectedMenuStructureFormat(
+                "Menu structure must be an array or RootNode, ".gettype($structure).' provided'
+            );
+        }
+        if ($this->isShowBreadcrumbs()) {
             $this->setContainerTitle($container, "/");
         }
-        return new RootNode($menuStructure, $container);
+
+        return $result;
     }
 
     /**
@@ -55,41 +86,40 @@ class MenuStructure
      * @return array
      * @throws \Siarko\cli\ui\exceptions\IncorrectProportionsException
      */
-    private function _validateStructure(array $structure, $breadcrumbs = ""): array
+    private function _validateArrayStructure(array $structure, $breadcrumbs = ""): array
     {
-        //TODO change this from assoc array to object based approach
         $result = [];
         foreach ($structure as $id => $data) {
             $node = new Node();
-            if(is_string($data) || $data instanceof Component){
+            if (is_string($data) || $data instanceof Component) {
                 $data = [ListMenu::CONTENT => $data];
             }
-            if (is_array($data)){
-                if(array_key_exists(ListMenu::CONTENT, $data)){
+            if (is_array($data)) {
+                if (array_key_exists(ListMenu::CONTENT, $data)) {
                     $c = $data[ListMenu::CONTENT];
-                    if(is_string($c)){
+                    if (is_string($c)) {
                         $node->setContent($this->getTextComponent($c));
-                    }elseif ($c instanceof Component){
+                    } elseif ($c instanceof Component) {
                         $node->setContent($c);
                     }
                     $node->setTitle($this->getTitle($c, $id));
-                }else{
+                } else {
                     $node->setContent($this->getTextComponent($id));
                     $node->setTitle($this->getTitle($id));
                 }
-                if(array_key_exists(ListMenu::SUBMENU, $data) && is_array($data[ListMenu::SUBMENU])){
-                    $b = $breadcrumbs."/".$node->getTitle();
-                    $node->setChildren($this->_validateStructure($data[ListMenu::SUBMENU], $b));
+                if (array_key_exists(ListMenu::SUBMENU, $data) && is_array($data[ListMenu::SUBMENU])) {
+                    $b = $breadcrumbs . "/" . $node->getTitle();
+                    $node->setChildren($this->_validateArrayStructure($data[ListMenu::SUBMENU], $b));
 
                     $container = $this->menu->createContainer($node->getChildren());
-                    if($this->isShowBreadcrumbs()){
+                    if ($this->isShowBreadcrumbs()) {
                         $this->setContainerTitle($container, $b);
                     }
                     $node->setContainer($container);
-                }else{
+                } else {
                     $node->setChildren([]);
                 }
-                if(array_key_exists(ListMenu::HANDLER, $data) && is_callable($data[ListMenu::HANDLER])){
+                if (array_key_exists(ListMenu::HANDLER, $data) && is_callable($data[ListMenu::HANDLER])) {
                     $node->setHandler($data[ListMenu::HANDLER]);
                 }
             }
@@ -99,16 +129,41 @@ class MenuStructure
     }
 
     /**
+     * @param Node[] $structure
+     * @throws \Siarko\cli\ui\exceptions\IncorrectProportionsException
+     */
+    private function _validateObjectStructure(array $structure, string $breadcrumbs = '')
+    {
+        foreach ($structure as $child) {
+            $content = $child->getContent();
+            if(strlen($child->getTitle()) == 0 && $content instanceof TextComponent){
+                /** @var TextComponent $content */
+                $child->setTitle($content->getStyledText()->getText());
+            }
+            if($child->hasChildren()){
+                $b = $breadcrumbs . "/" . $child->getTitle();
+                $this->_validateObjectStructure($child->getChildren());
+                $container = $this->menu->createContainer($child->getChildren());
+                if ($this->isShowBreadcrumbs()) {
+                    $this->setContainerTitle($container, $b);
+                }
+                $child->setContainer($container);
+            }
+        }
+
+    }
+
+    /**
      * Get menu data by path
      * @param string $menuPath
      * @return Node
      */
-    public function getData(string $menuPath): Node
+    public function getData(string $menuPath)
     {
-        if(strlen($menuPath) == 0){
+        if (strlen($menuPath) == 0) {
             return $this->structure;
         }
-        if($this->cacheExists($menuPath)){
+        if ($this->cacheExists($menuPath)) {
             return $this->getCache($menuPath);
         }
         $path = explode('/', $menuPath);
@@ -116,7 +171,7 @@ class MenuStructure
         $result = null;
         foreach ($path as $part) {
             $result = &$current[$part];
-            if(array_key_exists($part, $current)){
+            if (array_key_exists($part, $current)) {
                 $current = $current[$part]->getChildren();
             }
         }
@@ -143,7 +198,8 @@ class MenuStructure
         return $this;
     }
 
-    protected function setContainerTitle(Component $container, string $title){
+    protected function setContainerTitle(Component $container, string $title)
+    {
         $container->setBorder((new LineBorder())->setTitle($title));
     }
 
@@ -158,15 +214,15 @@ class MenuStructure
     private function getTitle($data, $default = 'undefined')
     {
         $result = $default;
-        if(is_string($data)){
+        if (is_string($data)) {
             $result = $data;
         }
-        if($data instanceof BaseComponent){
-            if($data instanceof TextComponent){
-                $result = $data->getText()->getText();
-            }elseif($data instanceof StyledText){
+        if ($data instanceof BaseComponent) {
+            if ($data instanceof TextComponent) {
+                $result = $data->getStyledText()->getText();
+            } elseif ($data instanceof StyledText) {
                 $result = $data->getText();
-            }elseif(method_exists($data, '__toString')){
+            } elseif (method_exists($data, '__toString')) {
                 $result = $data->__toString();
             }
         }

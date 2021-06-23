@@ -24,11 +24,10 @@ Profiler::setDefaultTimeFactor(\Siarko\cli\util\profiler\TimeFactor::MILLISECOND
 Profiler::start("complete_run", \Siarko\cli\util\profiler\TimeFactor::SECONDS());
 Profiler::setEnabled(false);
 
-MainConfig::get();
-
 $bootstrap = Bootstrap::get();
 $bootstrap->setProcess(function(){
     Profiler::start('Init_Process');
+    MainConfig::get();
     Output::get([
         'screenMode' => Output::MODE_FLIP_BUFFER
     ]);

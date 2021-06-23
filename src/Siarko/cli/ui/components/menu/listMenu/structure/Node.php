@@ -12,13 +12,13 @@ class Node
     /**
      * @var Node[]
      */
-    protected array $children;
+    protected array $children = [];
     /**
      * Main container
      * Specialized container that contains all item containers
      * @var MenuPageContainer|null
      */
-    protected ?MenuPageContainer $container;
+    protected ?MenuPageContainer $container = null;
 
     /**
      * @var bool
@@ -33,12 +33,12 @@ class Node
      * Title of element - not used for internal logic, created based on content
      * @var string
      */
-    private string $title;
+    private string $title = '';
     /**
      * Handler with action for item
-     * @var \Closure
+     * @var ?\Closure
      */
-    private \Closure $handler;
+    private ?\Closure $handler = null;
 
 
     /**
@@ -67,10 +67,12 @@ class Node
 
     /**
      * @param BaseComponent $content
+     * @return Node
      */
-    public function setContent(BaseComponent $content): void
+    public function setContent(BaseComponent $content): Node
     {
         $this->content = $content;
+        return $this;
     }
 
     /**
@@ -155,9 +157,17 @@ class Node
     }
 
     /**
-     * @return MenuPageContainer
+     * @param string $id
+     * @param Node $option
      */
-    public function getContainer(): MenuPageContainer
+    public function addOption(string $id, Node $option){
+        $this->children[$id] = $option;
+    }
+
+    /**
+     * @return ?MenuPageContainer
+     */
+    public function getContainer(): ?MenuPageContainer
     {
         return $this->container;
     }

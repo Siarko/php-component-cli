@@ -7,6 +7,7 @@ namespace Siarko\cli\util\config;
 use Siarko\cli\bootstrap\Bootstrap;
 use Siarko\cli\bootstrap\events\Events;
 use Siarko\cli\util\ArrayHelper;
+use Siarko\cli\util\profiler\Profiler;
 
 abstract class Config
 {
@@ -18,20 +19,27 @@ abstract class Config
 
     public function __construct()
     {
+        Profiler::start('config load');
         if(file_exists($this->getPath())){
+            Profiler::start('file load');
             //load config if file exists
             $this->load(file_get_contents($this->getPath()));
+            Profiler::end();
         }else{
             //file n/e, create and save
+            Profiler::start('file create');
             $this->load(null);
             $this->save();
+            Profiler::end();
         }
 
         Bootstrap::get()->setProcess(function(){
             //Save config on app close
+            Profiler::start('config save');
             $this->save();
+            Profiler::end();
         }, Events::EXIT);
-
+        Profiler::end();
     }
 
     public function load(?string $configString){

@@ -51,16 +51,17 @@ class LayoutFill extends AbstractLayout
     public function drawChildren(BaseComponent $component, array $children)
     {
         $filtered = $this->parentComponent->getChildren(
-            ComponentFilter::active(), ComponentFilter::floating(true)
+            ComponentFilter::active()
         );
         $childCount = count($filtered);
         if($childCount == 0){
             return;
         }
-        if($childCount > 1){
+        $modalCount = ComponentFilter::count($filtered, ComponentFilter::floating());
+        if($childCount-$modalCount > 1){
             throw new TooManyChildrenException();
         }else{
-            $filtered[key($filtered)]->draw();
+            parent::drawChildren($component, $children);
         }
     }
 
